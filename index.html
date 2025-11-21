@@ -1,487 +1,499 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <title>Emotion Sticker Lab</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 22px;
-    }
-
-    /* =============== PC 초대형 시니어 UI =============== */
-    @media (min-width: 1024px) {
-      body { font-size: 26px; }
-      .panel-title { font-size: 34px; }
-      .panel-sub { font-size: 24px; }
-      label { font-size: 26px; }
-      select { font-size: 24px; padding: 18px; }
-      .chip { font-size: 22px; padding: 10px 18px; }
-      button { font-size: 24px; padding: 16px 28px; }
-      .result-emotion { font-size: 26px; }
-      .result-prompt { font-size: 22px; }
-      .mini-box { font-size: 22px; }
-      .mini-box-label { font-size: 22px; }
-    }
-
-    /* =============== 모바일 최적화 UI =============== */
-    @media (max-width: 600px) {
-      body { font-size: 16px; }
-      .panel-title { font-size: 20px; }
-      .panel-sub { font-size: 16px; }
-      .chip { font-size: 14px; padding: 6px 10px; }
-      select { font-size: 16px; padding: 12px; }
-      button { font-size: 16px; padding: 10px 16px; }
-      .result-emotion { font-size: 17px; }
-      .result-prompt { font-size: 15px; }
-      .mini-box { font-size: 15px; }
-    }
-
-    header {
-      padding: 26px 24px;
-      border-bottom: 1px solid rgba(148,163,184,0.4);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo { display: flex; gap: 18px; align-items: center; font-size: 28px; font-weight: 700; }
-    .logo-icon {
-      width: 55px; height: 55px;
-      border-radius: 999px;
-      border: 2px solid #38bdf8;
-      display: flex; align-items:center; justify-content:center;
-      font-size: 32px;
-    }
-
-    .header-right { display: flex; gap: 14px; flex-wrap: wrap; }
-
-    .lang-select {
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-size: 20px;
-      border: 1px solid #475569;
-      background: rgba(15,23,42,0.95);
-      color: #e5e7eb;
-    }
-
-    main {
-      display: grid;
-      grid-template-columns: 480px 1fr;
-      gap: 24px;
-      padding: 24px;
-      max-width: 1480px;
-      margin: 0 auto;
-    }
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-    }
-
-    .panel {
-      background: radial-gradient(circle at top left, #111827 0, #020617 55%, #000 100%);
-      border-radius: 24px;
-      border: 1px solid rgba(148,163,184,0.3);
-      padding: 26px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }
-
-    .chips-row { display: flex; flex-wrap: wrap; gap: 10px; }
-
-    .chip {
-      border-radius: 999px;
-      border: 1px solid #4b5563;
-      padding: 8px 14px;
-      cursor: pointer;
-      background: rgba(15,23,42,0.9);
-      color: #d1d5db;
-    }
-    .chip.active { background: #38bdf8; border-color:#38bdf8; color:#020617; }
-
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 14px 22px;
-      cursor: pointer;
-      background: linear-gradient(135deg,#38bdf8,#22c55e);
-      color: #020617;
-      font-weight: 600;
-      box-shadow: 0 10px 25px rgba(56,189,248,0.3);
-    }
-
-    .result-list { display: flex; flex-direction: column; gap: 14px; max-height: calc(100vh - 240px); overflow-y:auto; }
-
-    .result-item {
-      border-radius: 20px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid #475569;
-      padding: 16px;
-    }
-
-    /* 링크 버튼 */
-    .tool-links {
-      display:flex;
-      gap:12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .tool-btn {
-      border-radius: 999px;
-      border: 1px solid #38bdf8;
-      padding: 10px 18px;
-      background: rgba(15,23,42,0.8);
-      color:#e5e7eb;
-      font-size: 18px;
-      cursor:pointer;
-    }
-
-    /* 온보딩 */
-    .onboard-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.85);
-      display:flex; align-items:center; justify-content:center;
-      z-index:100;
-    }
-    .onboard-panel {
-      background:#111827;
-      padding:24px;
-      border-radius:24px;
-      max-width:600px;
-      width:90%;
-      border:1px solid #4b5563;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="logo">
-      <div class="logo-icon">🐾</div>
-      <div>
-        <div data-i18n="logoTitle" id="logoTitle">Emotion Sticker Lab</div>
-        <div class="logo-sub" data-i18n="logoSub" id="logoSub">텍스트 없이 표정으로 만드는 프롬프트 도구</div>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <select id="langSelect" class="lang-select">
-        <option value="ko">한국어</option>
-        <option value="en">English</option>
-        <option value="ja">日本語</option>
-        <option value="zh">中文</option>
-      </select>
-    </div>
-  </header>
-
-  <main>
-    <!-- ================= 왼쪽 기본 설정 ================= -->
-    <section class="panel">
-      <div class="panel-title" data-i18n="leftTitle">이모티콘 기본 설정</div>
-      <div class="panel-sub" data-i18n="leftSub">캐릭터와 컨셉을 선택하면 9종 이미지 프롬프트가 생성됩니다.</div>
-
-      <label data-i18n="labelCategory">캐릭터 카테고리</label>
-      <select id="characterCategorySelect"></select>
-
-      <br/><br/>
-
-      <label data-i18n="labelCharacter">캐릭터 타입</label>
-      <select id="characterSelect"></select>
-
-      <br/><br/>
-
-      <label data-i18n="labelConcept">컨셉</label>
-      <div id="conceptChips" class="chips-row"></div>
-
-      <br/>
-
-      <button id="generateBtn">🔄 <span data-i18n="btnGenerate">9종 세트 생성</span></button>
-    </section>
-
-    <!-- ================= 오른쪽 결과 패널 ================= -->
-    <section class="panel">
-
-      <!-- 🔗 도구 링크 영역 -->
-      <div class="tool-links">
-        <a href="https://aistudio.google.com/" target="_blank" class="tool-btn">Google AI Studio</a>
-        <a href="https://imagefx.google.com/" target="_blank" class="tool-btn">ImageFX</a>
-        <a href="https://www.canva.com/" target="_blank" class="tool-btn">Canva</a>
-        <a href="https://www.figma.com/" target="_blank" class="tool-btn">Figma</a>
-      </div>
-
-      <div class="panel-title" data-i18n="rightTitle">결과</div>
-      <div class="panel-sub" data-i18n="rightSub">각 리액션마다 영어 이미지 프롬프트가 생성됩니다.</div>
-
-      <div id="resultList" class="result-list"></div>
-    </section>
-  </main>
-
-  <!-- ================= 온보딩 ================= -->
-  <div id="onboardingOverlay" class="onboard-backdrop">
-    <div class="onboard-panel">
-      <h2 data-i18n="onboardTitle">Emotion Sticker Lab 안내</h2>
-      <p data-i18n="onboardBody1">이 페이지는 "텍스트 없이 표정만으로 감정 전달" 이모티콘을 빠르게 만들 수 있는 생성 도구입니다.</p>
-      <ul>
-        <li data-i18n="onboardBullet1">캐릭터 + 컨셉만 고르면 9종 리액션 자동 구성</li>
-        <li data-i18n="onboardBullet2">구글 AI Studio에 바로 붙여넣는 영어 프롬프트 생성</li>
-        <li data-i18n="onboardBullet3">카카오톡/라인/피그마/캔바 제작에 최적화</li>
-      </ul>
-
-      <label><input type="checkbox" id="onboardDontShowCheckbox"> <span data-i18n="onboardDontShow">다시 보지 않기</span></label>
-      <br/><br/>
-      <button id="onboardCloseBtn">시작하기</button>
-    </div>
-  </div>
-
-  <script src="main.js"></script>
-</body>
-</html>
-
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <title>Emotion Sticker Lab</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 22px;
-    }
-
-    /* =============== PC 초대형 시니어 UI =============== */
-    @media (min-width: 1024px) {
-      body { font-size: 26px; }
-      .panel-title { font-size: 34px; }
-      .panel-sub { font-size: 24px; }
-      label { font-size: 26px; }
-      select { font-size: 24px; padding: 18px; }
-      .chip { font-size: 22px; padding: 10px 18px; }
-      button { font-size: 24px; padding: 16px 28px; }
-      .result-emotion { font-size: 26px; }
-      .result-prompt { font-size: 22px; }
-      .mini-box { font-size: 22px; }
-      .mini-box-label { font-size: 22px; }
-    }
-
-    /* =============== 모바일 최적화 UI =============== */
-    @media (max-width: 600px) {
-      body { font-size: 16px; }
-      .panel-title { font-size: 20px; }
-      .panel-sub { font-size: 16px; }
-      .chip { font-size: 14px; padding: 6px 10px; }
-      select { font-size: 16px; padding: 12px; }
-      button { font-size: 16px; padding: 10px 16px; }
-      .result-emotion { font-size: 17px; }
-      .result-prompt { font-size: 15px; }
-      .mini-box { font-size: 15px; }
-    }
-
-    header {
-      padding: 26px 24px;
-      border-bottom: 1px solid rgba(148,163,184,0.4);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo { display: flex; gap: 18px; align-items: center; font-size: 28px; font-weight: 700; }
-    .logo-icon {
-      width: 55px; height: 55px;
-      border-radius: 999px;
-      border: 2px solid #38bdf8;
-      display: flex; align-items:center; justify-content:center;
-      font-size: 32px;
-    }
-
-    .header-right { display: flex; gap: 14px; flex-wrap: wrap; }
-
-    .lang-select {
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-size: 20px;
-      border: 1px solid #475569;
-      background: rgba(15,23,42,0.95);
-      color: #e5e7eb;
-    }
-
-    main {
-      display: grid;
-      grid-template-columns: 480px 1fr;
-      gap: 24px;
-      padding: 24px;
-      max-width: 1480px;
-      margin: 0 auto;
-    }
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-    }
-
-    .panel {
-      background: radial-gradient(circle at top left, #111827 0, #020617 55%, #000 100%);
-      border-radius: 24px;
-      border: 1px solid rgba(148,163,184,0.3);
-      padding: 26px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }
-
-    .chips-row { display: flex; flex-wrap: wrap; gap: 10px; }
-
-    .chip {
-      border-radius: 999px;
-      border: 1px solid #4b5563;
-      padding: 8px 14px;
-      cursor: pointer;
-      background: rgba(15,23,42,0.9);
-      color: #d1d5db;
-    }
-    .chip.active { background: #38bdf8; border-color:#38bdf8; color:#020617; }
-
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 14px 22px;
-      cursor: pointer;
-      background: linear-gradient(135deg,#38bdf8,#22c55e);
-      color: #020617;
-      font-weight: 600;
-      box-shadow: 0 10px 25px rgba(56,189,248,0.3);
-    }
-
-    .result-list { display: flex; flex-direction: column; gap: 14px; max-height: calc(100vh - 240px); overflow-y:auto; }
-
-    .result-item {
-      border-radius: 20px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid #475569;
-      padding: 16px;
-    }
-
-    /* 링크 버튼 */
-    .tool-links {
-      display:flex;
-      gap:12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .tool-btn {
-      border-radius: 999px;
-      border: 1px solid #38bdf8;
-      padding: 10px 18px;
-      background: rgba(15,23,42,0.8);
-      color:#e5e7eb;
-      font-size: 18px;
-      cursor:pointer;
-    }
-
-    /* 온보딩 */
-    .onboard-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.85);
-      display:flex; align-items:center; justify-content:center;
-      z-index:100;
-    }
-    .onboard-panel {
-      background:#111827;
-      padding:24px;
-      border-radius:24px;
-      max-width:600px;
-      width:90%;
-      border:1px solid #4b5563;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="logo">
-      <div class="logo-icon">🐾</div>
-      <div>
-        <div data-i18n="logoTitle" id="logoTitle">Emotion Sticker Lab</div>
-        <div class="logo-sub" data-i18n="logoSub" id="logoSub">텍스트 없이 표정으로 만드는 프롬프트 도구</div>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <select id="langSelect" class="lang-select">
-        <option value="ko">한국어</option>
-        <option value="en">English</option>
-        <option value="ja">日本語</option>
-        <option value="zh">中文</option>
-      </select>
-    </div>
-  </header>
-
-  <main>
-    <!-- ================= 왼쪽 기본 설정 ================= -->
-    <section class="panel">
-      <div class="panel-title" data-i18n="leftTitle">이모티콘 기본 설정</div>
-      <div class="panel-sub" data-i18n="leftSub">캐릭터와 컨셉을 선택하면 9종 이미지 프롬프트가 생성됩니다.</div>
-
-      <label data-i18n="labelCategory">캐릭터 카테고리</label>
-      <select id="characterCategorySelect"></select>
-
-      <br/><br/>
-
-      <label data-i18n="labelCharacter">캐릭터 타입</label>
-      <select id="characterSelect"></select>
-
-      <br/><br/>
-
-      <label data-i18n="labelConcept">컨셉</label>
-      <div id="conceptChips" class="chips-row"></div>
-
-      <br/>
-
-      <button id="generateBtn">🔄 <span data-i18n="btnGenerate">9종 세트 생성</span></button>
-    </section>
-
-    <!-- ================= 오른쪽 결과 패널 ================= -->
-    <section class="panel">
-
-      <!-- 🔗 도구 링크 영역 -->
-      <div class="tool-links">
-        <a href="https://aistudio.google.com/" target="_blank" class="tool-btn">Google AI Studio</a>
-        <a href="https://imagefx.google.com/" target="_blank" class="tool-btn">ImageFX</a>
-        <a href="https://www.canva.com/" target="_blank" class="tool-btn">Canva</a>
-        <a href="https://www.figma.com/" target="_blank" class="tool-btn">Figma</a>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Emotion Sticker Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, sans-serif;
+        background: radial-gradient(circle at top, #020617 0, #000 60%);
+        color: #e5e7eb;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .logo-title {
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      .logo-sub {
+        font-size: 16px;
+        color: #94a3b8;
+        margin-top: 4px;
+      }
+
+      .lang-select-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+      }
+
+      select {
+        padding: 8px 12px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 1px solid #64748b;
+        background: #020617;
+        color: #e5e7eb;
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        gap: 24px;
+        padding: 24px;
+      }
+
+      .panel {
+        background: radial-gradient(circle at top left, #0f172a, #020617 70%);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+
+      .left-panel {
+        flex: 0 0 420px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .right-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .section-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      label {
+        display: block;
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+
+      .helper {
+        font-size: 14px;
+        color: #9ca3af;
+        margin-top: 4px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid #4b5563;
+        background: #020617;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .chip.active {
+        background: #22c55e;
+        color: #022c22;
+        border-color: #22c55e;
+        font-weight: 600;
+      }
+
+      button {
+        border: none;
+        cursor: pointer;
+      }
+
+      #generateBtn {
+        margin-top: 8px;
+        width: 100%;
+        padding: 14px;
+        font-size: 20px;
+        border-radius: 12px;
+        background: linear-gradient(90deg, #22c55e, #a3e635);
+        color: #022c22;
+        font-weight: 700;
+      }
+
+      #generateBtn:hover {
+        filter: brightness(1.05);
+      }
+
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .link-pill {
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid #4b5563;
+        font-size: 14px;
+      }
+
+      .results-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .results-header-title {
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .results-helper {
+        font-size: 14px;
+        color: #9ca3af;
+      }
+
+      #resultsList {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 16px;
+      }
+
+      .result-item {
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: #020617;
+        border: 1px solid #4b5563;
+      }
+
+      .result-tag {
+        font-size: 14px;
+        color: #a5b4fc;
+        margin-bottom: 4px;
+      }
+
+      .result-prompt {
+        user-select: all;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      /* 온보딩 모달 */
+
+      .onboard-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.82);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+      }
+
+      .onboard-panel {
+        width: min(560px, 92vw);
+        background: #020617;
+        border-radius: 24px;
+        padding: 24px;
+        border: 1px solid #4b5563;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.9);
+      }
+
+      .onboard-panel h2 {
+        font-size: 28px;
+        margin: 0 0 12px;
+      }
+
+      .onboard-panel p {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+
+      .onboard-panel ul {
+        padding-left: 20px;
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      .onboard-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .onboard-footer label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+      }
+
+      .onboard-footer button {
+        padding: 10px 24px;
+        font-size: 18px;
+        border-radius: 999px;
+        background: #22c55e;
+        color: #022c22;
+        font-weight: 700;
+      }
+
+      /* 시니어용 폰트 더 크게 (데스크톱) */
+
+      @media (min-width: 1024px) {
+        body {
+          font-size: 18px;
+        }
+
+        .section-title {
+          font-size: 24px;
+        }
+
+        label {
+          font-size: 20px;
+        }
+
+        select {
+          font-size: 18px;
+        }
+
+        #generateBtn {
+          font-size: 22px;
+        }
+
+        .result-item {
+          font-size: 18px;
+        }
+      }
+
+      /* 모바일 최적화 */
+
+      @media (max-width: 768px) {
+        main {
+          flex-direction: column;
+          padding: 16px;
+        }
+
+        .left-panel {
+          flex: none;
+          width: 100%;
+        }
+
+        .right-panel {
+          width: 100%;
+        }
+
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+        }
+
+        .logo-title {
+          font-size: 24px;
+        }
+
+        .logo-sub {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- 온보딩 -->
+      <div id="onboardingOverlay" class="onboard-backdrop">
+        <div class="onboard-panel">
+          <h2 data-i18n="onboardTitle">Emotion Sticker Lab 안내</h2>
+          <p data-i18n="onboardBody1">
+            이 페이지는 "텍스트 없이 표정만으로 감정 전달" 이모티콘을 빠르게 만들 수 있는
+            생성 도구입니다.
+          </p>
+          <ul>
+            <li data-i18n="onboardBullet1">
+              캐릭터 + 컨셉만 고르면 9종 리액션 자동 구성
+            </li>
+            <li data-i18n="onboardBullet2">
+              구글 AI Studio에 바로 붙여넣는 영어 프롬프트 생성
+            </li>
+            <li data-i18n="onboardBullet3">
+              카카오톡/라인/피그마/캔바 제작에 최적화
+            </li>
+          </ul>
+          <div class="onboard-footer">
+            <label>
+              <input
+                type="checkbox"
+                id="onboardDontShowCheckbox"
+              />
+              <span data-i18n="onboardDontShow">다시 보지 않기</span>
+            </label>
+            <button id="onboardCloseBtn" type="button" data-i18n="onboardStart">
+              시작하기
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="panel-title" data-i18n="rightTitle">결과</div>
-      <div class="panel-sub" data-i18n="rightSub">각 리액션마다 영어 이미지 프롬프트가 생성됩니다.</div>
+      <header>
+        <div>
+          <div class="logo-title">Emotion Sticker Lab</div>
+          <div class="logo-sub" data-i18n="logoSub">
+            텍스트 없이 표정으로 감정 전달하는 이모티콘 프롬프트 생성기
+          </div>
+        </div>
+        <div class="lang-select-wrap">
+          <span data-i18n="langLabel">언어 / 국가</span>
+          <select id="langSelect">
+            <option value="ko">한국 · Korea</option>
+            <option value="en">미국 · USA</option>
+            <option value="ja">日本 · Japan</option>
+            <option value="zh">中国 · China</option>
+          </select>
+        </div>
+      </header>
 
-      <div id="resultList" class="result-list"></div>
-    </section>
-  </main>
+      <main>
+        <!-- 왼쪽 패널 -->
+        <section class="panel left-panel">
+          <div>
+            <div class="section-title" data-i18n="basicSettingsTitle">
+              이모티콘 기본 설정
+            </div>
+            <div class="helper" data-i18n="basicSettingsDesc">
+              캐릭터와 컨셉을 선택하면 9종 이모티콘용 프롬프트가 자동으로 생성됩니다.
+            </div>
+          </div>
 
-  <!-- ================= 온보딩 ================= -->
-  <div id="onboardingOverlay" class="onboard-backdrop">
-    <div class="onboard-panel">
-      <h2 data-i18n="onboardTitle">Emotion Sticker Lab 안내</h2>
-      <p data-i18n="onboardBody1">이 페이지는 "텍스트 없이 표정만으로 감정 전달" 이모티콘을 빠르게 만들 수 있는 생성 도구입니다.</p>
-      <ul>
-        <li data-i18n="onboardBullet1">캐릭터 + 컨셉만 고르면 9종 리액션 자동 구성</li>
-        <li data-i18n="onboardBullet2">구글 AI Studio에 바로 붙여넣는 영어 프롬프트 생성</li>
-        <li data-i18n="onboardBullet3">카카오톡/라인/피그마/캔바 제작에 최적화</li>
-      </ul>
+          <div class="form-group">
+            <label for="categorySelect" data-i18n="characterCategory">
+              캐릭터 카테고리
+            </label>
+            <select id="categorySelect"></select>
+          </div>
 
-      <label><input type="checkbox" id="onboardDontShowCheckbox"> <span data-i18n="onboardDontShow">다시 보지 않기</span></label>
-      <br/><br/>
-      <button id="onboardCloseBtn">시작하기</button>
+          <div class="form-group">
+            <label for="characterSelect" data-i18n="characterType">
+              캐릭터 타입
+            </label>
+            <select id="characterSelect"></select>
+            <div class="helper" data-i18n="characterHint">
+              예) 말티즈, 시바견, 카페 알바생, 사무직 남자, 브랜드 마스코트 등
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="conceptTitle">컨셉 (자동추천)</label>
+            <div
+              id="conceptChipsContainer"
+              class="chips"
+            ></div>
+            <div class="helper" data-i18n="conceptHint">
+              1번: 베이직 감정 9종 · 2번: 일상 리액션 · 3번: 짜증/빡침 · 4번: 사랑/하트 ·
+              5번: 직장인 · 6번: 새해 인사 · 7번: 크리스마스 · 8번: 연인 · 9번: 알바 ·
+              10번: 게임 · 11번: 운동
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button id="generateBtn" type="button" data-i18n="generateBtn">
+              9종 세트 생성
+            </button>
+          </div>
+
+          <div class="form-group">
+            <div class="section-title" style="font-size: 18px" data-i18n="linksTitle">
+              추천 툴 바로가기
+            </div>
+            <div class="links">
+              <a
+                href="https://aistudio.google.com/prompts"
+                target="_blank"
+                class="link-pill"
+                >Google AI Studio</a
+              >
+              <a
+                href="https://images.google.com/"
+                target="_blank"
+                class="link-pill"
+                >ImageFX / Imagen</a
+              >
+              <a
+                href="https://www.canva.com/"
+                target="_blank"
+                class="link-pill"
+                >Canva</a
+              >
+              <a
+                href="https://www.figma.com/"
+                target="_blank"
+                class="link-pill"
+                >Figma</a
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- 오른쪽 패널 -->
+        <section class="panel right-panel">
+          <div class="results-header">
+            <div>
+              <div
+                class="results-header-title"
+                data-i18n="resultsTitle"
+              >
+                9종 이모티콘 프롬프트 결과
+              </div>
+              <div
+                class="results-helper"
+                data-i18n="resultsHint"
+              >
+                각 줄을 그대로 Google AI Studio / ImageFX에 붙여넣으면 됩니다.
+              </div>
+            </div>
+          </div>
+          <ol id="resultsList"></ol>
+        </section>
+      </main>
     </div>
-  </div>
 
-  <script src="main.js"></script>
-</body>
+    <script src="main.js"></script>
+  </body>
 </html>
